@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 '''calculate point to line distance'''
 
 
-def PointToLineDistance(x, y, line_x, line_y, theta):
+def Point2LineDistance(x, y, line_x, line_y, theta):
     return math.fabs(math.sin(theta) * (x - line_x) - math.cos(theta) * (y - line_y))
 
 
@@ -20,7 +20,6 @@ def DroppingPoint(ball):
 
 
 def InterceptPoint(ball, catch_x):
-    catch_x -= ball.radius * ball.vx / math.sqrt(ball.vx ** 2 + ball.vy ** 2)
     drop, _ = DroppingPoint(ball)
     a = 2 * drop - ball.x
     return catch_x, ball.y + ball.vy / ball.vx * (a - catch_x) - 9.8 / 2 / ball.vx ** 2 * (a - catch_x) ** 2
@@ -28,48 +27,56 @@ def InterceptPoint(ball, catch_x):
 
 def SolveThetaEquation(a, b, c):
     delta = a ** 2 * b ** 2 + b ** 4 - b ** 2 * c ** 2
+    # 无解
     if delta < 0:
-        raise Exception("无解")
+        return False, 0, 0
     root = math.sqrt(delta)
     x1 = -(root + a * c) / (a ** 2 + b ** 2)
     y1 = (-a * x1 - c) / b
     x2 = (root - a * c) / (a ** 2 + b ** 2)
     y2 = (-a * x2 - c) / b
 
-    return math.atan2(y1, x1) / 4 + math.pi / 2, math.atan2(y2, x2) / 4 + math.pi / 2
+    return True, math.atan2(y1, x1) / 4 + math.pi / 2, math.atan2(y2, x2) / 4 + math.pi / 2
 
 
 def CatchBall_Bat(ball, catch_x, target):
+    # 计算反弹点
     catch_x, catch_y = InterceptPoint(ball, catch_x)
     drop, _ = DroppingPoint(ball)
     vx1 = ball.vx
     vy1 = -ball.vy + 9.8 / ball.vx * (2 * drop - ball.x - catch_x)
     a = (catch_y - ball.radius) * (vx1 ** 2 - vy1 ** 2) - 2 * vx1 * vy1 * (target - catch_x)
     b = 2 * (catch_y - ball.radius) * vx1 * vy1 + (target - catch_x) * (vx1 ** 2 - vy1 ** 2)
-    c = -(catch_y - ball.radius) * (vx1 ** 2 - vy1 ** 2) - 9.8 * (target - catch_x) ** 2
+    c = (catch_y - ball.radius) * (vx1 ** 2 + vy1 ** 2) - 9.8 * (target - catch_x) ** 2
 
     thetas = SolveThetaEquation(a, b, c)
-    # 默认低回
-    theta = thetas[1]
 
-    # 触网判断
-    vx_bounce, vy_bounce = flection(vx1, vy1, theta)
-    ball_bounce = PingPongBall(catch_x, catch_y, vx_bounce, vy_bounce)
-    flag = NetTouchCheck(ball_bounce)
-    # 如果会触网，则用高回
-    if flag:
-        theta = thetas[0]
+    # 有解
+    if thetas[0]:
+        # 默认低回
+        theta = thetas[2]
+        # 触网判断，如果触网用高回
+        vx_bounce, vy_bounce = flection(vx1, vy1, theta)
+        ball_bounce = PingPongBall(catch_x, catch_y, vx_bounce, vy_bounce)
+        flag = NetTouchCheck(ball_bounce)
+        if flag:
+            theta = thetas[1]
 
-    # todo 提高精度
-    # 球板触碰桌子则调整位置
-    bat = PingPongBat(catch_x, catch_y, 0, 0, theta)
-    lower = min(bat.y - math.sin(bat.theta) * bat.radius, bat.y - math.sin(bat.theta) * bat.radius)
-    if lower <= 0:
-        lower = math.fabs(lower)
-        bat.x += lower / math.sin(bat.theta) * math.cos(bat.theta)
-        bat.y += lower
+        # 调整球板位置
+        catch_x += ball.radius / math.fabs(math.sin(theta))
+        bat = PingPongBat(catch_x, catch_y, 0, 0, theta)
+        # 球板触碰桌子则调整位置
+        lower = min(bat.y - math.sin(bat.theta) * bat.radius, bat.y - math.sin(bat.theta) * bat.radius)
+        if lower <= 0:
+            lower = math.fabs(lower)
+            bat.x += lower / math.sin(bat.theta) * math.cos(bat.theta)
+            bat.y += lower
 
-    return bat
+        return bat
+    # 无解
+    else:
+        # todo 调整策略
+        return None
 
 
 def NetTouchCheck(ball):
@@ -104,18 +111,19 @@ class PingPongBall:
             return False
 
     def CheckBounce(self, targetBat):
-        d = PointToLineDistance(self.x, self.y, targetBat.x, targetBat.y, targetBat.theta)
+        d = Point2LineDistance(self.x, self.y, targetBat.x, targetBat.y, targetBat.theta)
         # 这里用中心距离判断有点小问题
         dr = Point2PointDistance(self.x, self.y, targetBat.x, targetBat.y)
 
         if d <= self.radius and dr <= math.sqrt(targetBat.radius ** 2 + self.radius ** 2):
             x, y = self.TryMove(1e-5)
-            d_next = PointToLineDistance(x, y, targetBat.x, targetBat.y, targetBat.theta)
+            d_next = Point2LineDistance(x, y, targetBat.x, targetBat.y, targetBat.theta)
             if d_next < d:
                 return True
         return False
 
     def Bounce(self, targetBat):
+
         self.vx, self.vy = flection(self.vx, self.vy, targetBat.theta)
 
     def CheckTableBounce(self):
@@ -178,7 +186,7 @@ class ServeBallRobot:
 class PingPongManager:
     def __init__(self, ball):
         self.ball = ball
-        self.tick = 1e-3
+        self.tick = 1e-4
         self.bats = [None, None]
 
     def start(self):
@@ -186,7 +194,6 @@ class PingPongManager:
             self.ball.Move(self.tick)
             if self.ball.CheckTableBounce():
                 self.ball.TableBounce()
-                print(f"table bounce {self.ball.x}")
             if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
                 break
             for i in range(2):
@@ -210,10 +217,15 @@ def flection(vx, vy, theta):
 
 if __name__ == '__main__':
     robot = ServeBallRobot()
+    target = -1.3
+    li = []
     ball = robot.GenerateBall()
-    bat = CatchBall_Bat(ball, DroppingPoint(ball)[0] + 0.1, -0.9)
-    bat.show()
+    bat = CatchBall_Bat(ball, DroppingPoint(ball)[0] + 0.1, target)
     mgr = PingPongManager(ball)
-    mgr.bats = [None, bat]
+    if bat is not None:
+        mgr.bats = [None, bat]
+        bat.show()
+    else:
+        print("无解")
     mgr.start()
     mgr.show()
