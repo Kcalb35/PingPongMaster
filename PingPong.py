@@ -39,10 +39,11 @@ def SolveThetaEquation(a, b, c):
     return True, math.atan2(y1, x1) / 4 + math.pi / 2, math.atan2(y2, x2) / 4 + math.pi / 2
 
 
-def CatchBall_Bat(ball, catch_x, target):
+def CatchBall_Bat(ball, target):
     # 计算反弹点
-    catch_x, catch_y = InterceptPoint(ball, catch_x)
+    dx = 0.1
     drop, _ = DroppingPoint(ball)
+    catch_x, catch_y = InterceptPoint(ball, drop + dx)
     vx1 = ball.vx
     vy1 = -ball.vy + 9.8 / ball.vx * (2 * drop - ball.x - catch_x)
     a = (catch_y - ball.radius) * (vx1 ** 2 - vy1 ** 2) - 2 * vx1 * vy1 * (target - catch_x)
@@ -56,10 +57,9 @@ def CatchBall_Bat(ball, catch_x, target):
         # 默认低回
         theta = thetas[2]
         # 触网判断，如果触网用高回
-        vx_bounce, vy_bounce = flection(vx1, vy1, theta)
+        vx_bounce, vy_bounce = flection(vx1, vy1, 0, 0, theta)
         ball_bounce = PingPongBall(catch_x, catch_y, vx_bounce, vy_bounce)
-        flag = NetTouchCheck(ball_bounce)
-        if flag:
+        if NetTouchCheck(ball_bounce):
             theta = thetas[1]
 
         # 调整球板位置
@@ -76,10 +76,33 @@ def CatchBall_Bat(ball, catch_x, target):
     # 无解
     else:
         # # todo 调整策略
-        # theta = math.pi/2
-        # # 迭代20次
-        # for _ in range(20):
-        #
+        iterCount = 30
+        theta = math.pi / 4
+        bat_v = vector(-0.5, 0.5)
+        ball_v = vector(vx1, vy1)
+        # 迭代20次
+        for _ in range(iterCount):
+            equiv_v = ball_v - bat_v.multiply(2) + bat_v.project(theta).multiply(2)
+            # 解方程
+            square_sub = equiv_v.x ** 2 - equiv_v.y ** 2
+            a = (catch_y - ball.radius) * square_sub - 2 * equiv_v.x * equiv_v.y * (target - catch_x)
+            b = 2 * (catch_y - ball.radius) * equiv_v.x * equiv_v.y + (target - catch_x) * square_sub
+            c = (catch_y - ball.radius) * (equiv_v.x ** 2 + equiv_v.y ** 2) - 9.8 * (target - catch_x) ** 2
+            thetas = SolveThetaEquation(a, b, c)
+            print(thetas)
+            if not thetas[0]:
+                print(f"加速:{bat_v.x},{bat_v.y} 击球点+{dx} 无解")
+                # 调整速度和击球位置
+                bat_v.y += 0.1
+                dx += 0.01
+                catch_x, catch_y = InterceptPoint(ball, drop + dx)
+            elif math.fabs(thetas[2] - theta) <= 1e-6:
+                theta = thetas[2]
+                catch_x += ball.radius / math.fabs(math.sin(theta))
+                bat = PingPongBat(catch_x, catch_y, bat_v.x, bat_v.y, theta)
+                print(f"可以加速 {bat_v.x},{bat_v.y} 角度 {theta}")
+                return bat
+            theta = thetas[2]
         return None
 
 
@@ -91,31 +114,30 @@ def NetTouchCheck(ball):
         return False
 
 
-class vectorOp:
-    @staticmethod
-    def dot(v1: tuple, v2: tuple):
-        return v1[0] * v2[0] + v1[1] * v2[1]
+class vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.length = math.sqrt(self.x ** 2 + self.y ** 2)
 
-    @staticmethod
-    def sub(v1: tuple, v2: tuple):
-        return v1[0] - v2[0], v1[1] - v2[1]
+    def __sub__(self, other):
+        return vector(self.x - other.x, self.y - other.y)
 
-    @staticmethod
-    def project(v: tuple, theta):
-        h = v[0] * math.cos(theta) + v[1] * math.sin(theta)
-        return h * math.cos(theta), h * math.sin(theta)
+    def __add__(self, other):
+        return vector(self.x + other.x, self.y + other.y)
 
-    @staticmethod
-    def length(v: tuple):
-        return math.sqrt(v[0] ** 2 + v[1] ** 2)
+    def __neg__(self):
+        return vector(-self.x, -self.y)
 
-    @staticmethod
-    def neg(v: tuple):
-        return -v[0], -v[1]
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
 
-    @staticmethod
-    def add(v1: tuple, v2: tuple):
-        return v1[0] + v2[0], v1[1] + v2[1]
+    def project(self, theta):
+        h = self.x * math.cos(theta) + self.y * math.sin(theta)
+        return vector(h * math.cos(theta), h * math.sin(theta))
+
+    def multiply(self, times):
+        return vector(self.x * times, self.y * times)
 
 
 class PingPongBall:
@@ -155,23 +177,7 @@ class PingPongBall:
         return False
 
     def Bounce(self, targetBat):
-        th = targetBat.theta
-        ball_hv = vectorOp.project((self.vx, self.vy), th)
-        ball_vv = vectorOp.sub((self.vx, self.vy), ball_hv)
-
-        bat_hv = vectorOp.project((targetBat.vx, targetBat.vy), th)
-        bat_vv = (targetBat.vx - bat_hv[0], targetBat.vy - bat_hv[1])
-
-        # 进行速度叠加
-        ball_vv = vectorOp.sub(ball_vv, bat_vv)
-        ball_vv = vectorOp.neg(ball_vv)
-        ball_vv = vectorOp.add(ball_vv, bat_vv)
-
-        # 还差板的旋转
-        # collide_x = self.x + self.radius * math.cos(th - math.pi / 2)
-        # collide_y = self.y + self.radius * math.sin(th - math.pi / 2)
-        # r = math.sqrt((collide_x - targetBat.x) ** 2 + (collide_y - targetBat.y) ** 2)
-        self.vx, self.vy = vectorOp.add(ball_hv, ball_vv)
+        self.vx, self.vy = flection(self.vx, self.vy, targetBat.vx, targetBat.vy, targetBat.theta)
 
     def CheckTableBounce(self):
         if self.y <= self.radius and math.fabs(self.x) <= 1.37:
@@ -222,6 +228,7 @@ class ServeBallRobot:
 
     def GenerateBall(self):
         item = random.randint(0, len(self.lines) - 1)
+        print(item)
         return self.GenerateBallbyIndex(item)
 
     def GenerateBallbyIndex(self, index):
@@ -234,7 +241,7 @@ class ServeBallRobot:
 class PingPongManager:
     def __init__(self, ball):
         self.ball = ball
-        self.tick = 1e-5
+        self.tick = 1e-4
         self.bats = [None, None]
 
     def start(self):
@@ -257,17 +264,27 @@ class PingPongManager:
         # plt.show()
 
 
-def flection(vx, vy, theta):
-    theta = 2 * theta
-    vx, vy = math.cos(theta) * vx + math.sin(theta) * vy, math.sin(theta) * vx - math.cos(theta) * vy
-    return vx, vy
+def flection(vx, vy, batvx, batvy, theta):
+    ball_v = vector(vx, vy)
+    ball_hv = ball_v.project(theta)
+    ball_vv = ball_v - ball_hv
+
+    bat_v = vector(batvx, batvy)
+    bat_hv = bat_v.project(theta)
+    bat_vv = bat_v - bat_hv
+
+    # 进行速度叠加
+    ball_vv = bat_vv.multiply(2) - ball_vv
+    ball_v = ball_hv + ball_vv
+    return ball_v.x, ball_v.y
 
 
 if __name__ == '__main__':
     robot = ServeBallRobot()
     target = -1
-    ball = robot.GenerateBallbyIndex(195)
-    bat = CatchBall_Bat(ball, DroppingPoint(ball)[0] + 0.1, target)
+    # ball = robot.GenerateBall()
+    ball = robot.GenerateBallbyIndex(368)
+    bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
     if bat is not None:
         mgr.bats = [None, bat]
