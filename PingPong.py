@@ -87,6 +87,33 @@ def NetTouchCheck(ball):
         return False
 
 
+class vectorOp:
+    @staticmethod
+    def dot(v1: tuple, v2: tuple):
+        return v1[0] * v2[0] + v1[1] * v2[1]
+
+    @staticmethod
+    def sub(v1: tuple, v2: tuple):
+        return v1[0] - v2[0], v1[1] - v2[1]
+
+    @staticmethod
+    def project(v: tuple, theta):
+        h = v[0] * math.cos(theta) + v[1] * math.sin(theta)
+        return h * math.cos(theta), h * math.sin(theta)
+
+    @staticmethod
+    def length(v: tuple):
+        return math.sqrt(v[0] ** 2 + v[1] ** 2)
+
+    @staticmethod
+    def neg(v: tuple):
+        return -v[0], -v[1]
+
+    @staticmethod
+    def add(v1: tuple, v2: tuple):
+        return v1[0] + v2[0], v1[1] + v2[1]
+
+
 class PingPongBall:
     def __init__(self, x, y, vx, vy):
         self.x = x
@@ -123,8 +150,23 @@ class PingPongBall:
         return False
 
     def Bounce(self, targetBat):
+        th = targetBat.theta
+        ball_hv = vectorOp.project((ball.vx, ball.vy), th)
+        ball_vv = vectorOp.sub((self.vx, self.vy), ball_hv)
 
-        self.vx, self.vy = flection(self.vx, self.vy, targetBat.theta)
+        bat_hv = vectorOp.project((targetBat.vx, targetBat.vy), th)
+        bat_vv = (targetBat.vx - bat_hv[0], targetBat.vy - bat_hv[1])
+
+        # 进行速度叠加
+        ball_vv = vectorOp.sub(ball_vv, bat_vv)
+        ball_vv = vectorOp.neg(ball_vv)
+        ball_vv = vectorOp.add(ball_vv, bat_vv)
+
+        # 还差板的旋转
+        # collide_x = self.x + self.radius * math.cos(th - math.pi / 2)
+        # collide_y = self.y + self.radius * math.sin(th - math.pi / 2)
+        # r = math.sqrt((collide_x - targetBat.x) ** 2 + (collide_y - targetBat.y) ** 2)
+        self.vx, self.vy = vectorOp.add(ball_hv, ball_vv)
 
     def CheckTableBounce(self):
         if self.y <= self.radius and math.fabs(self.x) <= 1.37:
@@ -206,7 +248,7 @@ class PingPongManager:
         plt.plot([0, 0], [0, 0.1525])
         # plt.ylim((0, 0.5))
         # plt.xlim(-1.5, 1.5)
-        plt.show()
+        # plt.show()
 
 
 def flection(vx, vy, theta):
@@ -217,8 +259,7 @@ def flection(vx, vy, theta):
 
 if __name__ == '__main__':
     robot = ServeBallRobot()
-    target = -1.3
-    li = []
+    target = -1
     ball = robot.GenerateBall()
     bat = CatchBall_Bat(ball, DroppingPoint(ball)[0] + 0.1, target)
     mgr = PingPongManager(ball)
@@ -229,3 +270,26 @@ if __name__ == '__main__':
         print("无解")
     mgr.start()
     mgr.show()
+    plt.show()
+
+    # ball = Pingpongball(0, 0.2, -1, 0)
+    # bat = pingpongbat(-0.03, 0.2, 2, 1, math.pi / 4)
+    # mgr = pingpongmanager(ball)
+    # mgr.bats = [none, bat]
+    # mgr.start()
+    # bat.show()
+    # mgr.show()
+
+    # for i in range(20):
+    #     ball = ServeBallRobot().GenerateBallbyIndex(195)
+    #     dropping = DroppingPoint(ball)[0] + 0.1
+    #     x, y = InterceptPoint(ball, dropping)
+    #     theta = math.pi / 21 * (i+1)
+    #     catch_x = x + ball.radius / math.fabs(math.sin(theta))
+    #     bat = PingPongBat(catch_x, y, 0, 0, theta)
+    #     mgr = PingPongManager(ball)
+    #     mgr.bats = [None, bat]
+    #     mgr.start()
+    #     mgr.show()
+    #     bat.show()
+    # plt.show()
