@@ -39,17 +39,35 @@ def SolveThetaEquation(a, b, c):
     return True, math.atan2(y1, x1) / 4 + math.pi / 2, math.atan2(y2, x2) / 4 + math.pi / 2
 
 
+def Generate_bat(catch_x, catch_y, vx, vy, theta):
+    # 留出碰撞位置
+    catch_x += 0.02 / math.fabs(math.sin(theta))
+    bat = PingPongBat(catch_x, catch_y, vx, vy, theta)
+
+    # 球板触碰桌子则调整位置
+    lower = min(bat.y - math.sin(bat.theta) * bat.radius, bat.y - math.sin(bat.theta) * bat.radius)
+    if lower <= 0:
+        lower = math.fabs(lower)
+        bat.x += lower / math.sin(bat.theta) * math.cos(bat.theta)
+        bat.y += lower
+    return bat
+
+
 def CatchBall_Bat(ball, target):
-    # 计算反弹点
+    # 计算一个合理的反弹点
     dx = 0.1
     drop, _ = DroppingPoint(ball)
     catch_x, catch_y = InterceptPoint(ball, drop + dx)
+    while catch_y < 0.02:
+        dx -= 0.01
+        catch_x, catch_y = InterceptPoint(ball, drop + dx)
+
+    # 计算碰撞前触速度，解方程
     vx1 = ball.vx
     vy1 = -ball.vy + 9.8 / ball.vx * (2 * drop - ball.x - catch_x)
     a = (catch_y - ball.radius) * (vx1 ** 2 - vy1 ** 2) - 2 * vx1 * vy1 * (target - catch_x)
     b = 2 * (catch_y - ball.radius) * vx1 * vy1 + (target - catch_x) * (vx1 ** 2 - vy1 ** 2)
     c = (catch_y - ball.radius) * (vx1 ** 2 + vy1 ** 2) - 9.8 * (target - catch_x) ** 2
-
     thetas = SolveThetaEquation(a, b, c)
 
     # 有解
@@ -62,26 +80,18 @@ def CatchBall_Bat(ball, target):
         if NetTouchCheck(ball_bounce):
             theta = thetas[1]
 
-        # 调整球板位置
-        catch_x += ball.radius / math.fabs(math.sin(theta))
-        bat = PingPongBat(catch_x, catch_y, 0, 0, theta)
-        # 球板触碰桌子则调整位置
-        lower = min(bat.y - math.sin(bat.theta) * bat.radius, bat.y - math.sin(bat.theta) * bat.radius)
-        if lower <= 0:
-            lower = math.fabs(lower)
-            bat.x += lower / math.sin(bat.theta) * math.cos(bat.theta)
-            bat.y += lower
-
-        return bat
+        # 根据数据生成球拍
+        return Generate_bat(catch_x, catch_y, 0, 0, theta)
     # 无解
     else:
-        # # todo 调整策略
-        iterCount = 30
+        iterCount = 40
         theta = math.pi / 4
         bat_v = vector(-0.5, 0.5)
         ball_v = vector(vx1, vy1)
+        i = 0
         # 迭代20次
-        for _ in range(iterCount):
+        while i <= iterCount:
+            i += 1
             equiv_v = ball_v - bat_v.multiply(2) + bat_v.project(theta).multiply(2)
             # 解方程
             square_sub = equiv_v.x ** 2 - equiv_v.y ** 2
@@ -89,19 +99,27 @@ def CatchBall_Bat(ball, target):
             b = 2 * (catch_y - ball.radius) * equiv_v.x * equiv_v.y + (target - catch_x) * square_sub
             c = (catch_y - ball.radius) * (equiv_v.x ** 2 + equiv_v.y ** 2) - 9.8 * (target - catch_x) ** 2
             thetas = SolveThetaEquation(a, b, c)
-            print(thetas)
+            # 无解
             if not thetas[0]:
-                print(f"加速:{bat_v.x},{bat_v.y} 击球点+{dx} 无解")
-                # 调整速度和击球位置
-                bat_v.y += 0.1
-                dx += 0.01
-                catch_x, catch_y = InterceptPoint(ball, drop + dx)
+                print(f"加速:{bat_v.x:.1f},{bat_v.y:.1f} 击球点{catch_x:.2f},{catch_y:.2f} 无解")
+                if catch_x <= 0.5:
+                    bat_v.y += 0.1
+                    bat_v.x -= 0.1
+                else:
+                    bat_v.x -= 0.2
+                continue
             elif math.fabs(thetas[2] - theta) <= 1e-6:
                 theta = thetas[2]
-                catch_x += ball.radius / math.fabs(math.sin(theta))
-                bat = PingPongBat(catch_x, catch_y, bat_v.x, bat_v.y, theta)
-                print(f"可以加速 {bat_v.x},{bat_v.y} 角度 {theta}")
-                return bat
+                # 检查触网
+                vx_bounce, vy_bounce = flection(vx1, vy1, bat_v.x, bat_v.y, theta)
+                ball_bounce = PingPongBall(catch_x, catch_y, vx_bounce, vy_bounce)
+                if NetTouchCheck(ball_bounce):
+                    print("触网")
+                    bat_v.y += 0.1
+                    continue
+
+                print(f"加速 {bat_v.x:.2f},{bat_v.y:.2f} 角度 {theta} 有解")
+                return Generate_bat(catch_x, catch_y, bat_v.x, bat_v.y, theta)
             theta = thetas[2]
         return None
 
@@ -249,6 +267,9 @@ class PingPongManager:
             self.ball.Move(self.tick)
             if self.ball.CheckTableBounce():
                 self.ball.TableBounce()
+                if len(self.ball.TableBouncePoint) >= 2 and self.ball.TableBouncePoint[-1] * self.ball.TableBouncePoint[
+                    -2] > 0:
+                    break
             if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
                 break
             for i in range(2):
@@ -283,7 +304,7 @@ if __name__ == '__main__':
     robot = ServeBallRobot()
     target = -1
     # ball = robot.GenerateBall()
-    ball = robot.GenerateBallbyIndex(368)
+    ball = robot.GenerateBallbyIndex(366)
     bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
     if bat is not None:

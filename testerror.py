@@ -8,23 +8,22 @@ if __name__ == '__main__':
     tryTimes = 0
     while True:
         try:
-            tryTimes+=1
+            tryTimes += 1
             ball = robot.GenerateBall()
             bat = CatchBall_Bat(ball, target)
             mgr = PingPongManager(ball)
             mgr.tick = 1e-3
             if bat is not None:
                 mgr.bats = [None, bat]
-                bat.show()
             else:
                 continue
             mgr.start()
             dx = mgr.ball.TableBouncePoint[1] - target
             li.append(dx)
             sum += math.fabs(dx)
-            if len(li) == 400:
+            if len(li) == 450:
                 break
         except Exception as e:
             print(f"{ball.vx}")
     print("average error:", sum / len(li))
-    print("success rate:",len(li)/tryTimes)
+    print("success rate:", len(li) / tryTimes)
