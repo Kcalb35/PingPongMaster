@@ -1,7 +1,7 @@
 from PingPong import *
 
 if __name__ == '__main__':
-    robot = ServeBallRobot()
+    robot = ServeBallRobot("data.txt")
     target = -1
     sum = 0
     li = []
@@ -12,7 +12,7 @@ if __name__ == '__main__':
             ball = robot.GenerateBall()
             bat = CatchBall_Bat(ball, target)
             mgr = PingPongManager(ball)
-            mgr.tick = 1e-3
+            mgr.tick = 1e-6
             if bat is not None:
                 mgr.bats = [None, bat]
             else:
@@ -21,7 +21,7 @@ if __name__ == '__main__':
             dx = mgr.ball.TableBouncePoint[1] - target
             li.append(dx)
             sum += math.fabs(dx)
-            if len(li) == 450:
+            if len(li) == 30:
                 break
         except Exception as e:
             print(f"{ball.vx}")

@@ -240,8 +240,8 @@ class PingPongBat:
 
 
 class ServeBallRobot:
-    def __init__(self):
-        with open("ServeBallData.txt", "r") as f:
+    def __init__(self, file):
+        with open(file, "r") as f:
             self.lines = f.readlines()
 
     def GenerateBall(self):
@@ -301,10 +301,10 @@ def flection(vx, vy, batvx, batvy, theta):
 
 
 if __name__ == '__main__':
-    robot = ServeBallRobot()
+    robot = ServeBallRobot("data.txt")
     target = -1
-    # ball = robot.GenerateBall()
-    ball = robot.GenerateBallbyIndex(366)
+    ball = robot.GenerateBall()
+    # ball = robot.GenerateBallbyIndex(366)
     bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
     if bat is not None:
