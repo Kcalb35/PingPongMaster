@@ -75,7 +75,11 @@ def CatchBall_Bat(ball, catch_x, target):
         return bat
     # 无解
     else:
-        # todo 调整策略
+        # # todo 调整策略
+        # theta = math.pi/2
+        # # 迭代20次
+        # for _ in range(20):
+        #
         return None
 
 
@@ -124,6 +128,7 @@ class PingPongBall:
         self.trace = [[x], [y]]
         self.decay = 1
         # self.decay = math.sqrt(0.9)
+        self.TableBouncePoint = []
 
     def CheckOutBoundary(self):
         if math.fabs(self.x) > 1.37 and self.y <= self.radius:
@@ -151,7 +156,7 @@ class PingPongBall:
 
     def Bounce(self, targetBat):
         th = targetBat.theta
-        ball_hv = vectorOp.project((ball.vx, ball.vy), th)
+        ball_hv = vectorOp.project((self.vx, self.vy), th)
         ball_vv = vectorOp.sub((self.vx, self.vy), ball_hv)
 
         bat_hv = vectorOp.project((targetBat.vx, targetBat.vy), th)
@@ -176,6 +181,7 @@ class PingPongBall:
 
     def TableBounce(self):
         self.vy = -self.vy
+        self.TableBouncePoint.append(self.x)
 
     def TryMove(self, time):
         x = self.x + self.vx * time
@@ -228,7 +234,7 @@ class ServeBallRobot:
 class PingPongManager:
     def __init__(self, ball):
         self.ball = ball
-        self.tick = 1e-4
+        self.tick = 1e-5
         self.bats = [None, None]
 
     def start(self):
@@ -260,7 +266,7 @@ def flection(vx, vy, theta):
 if __name__ == '__main__':
     robot = ServeBallRobot()
     target = -1
-    ball = robot.GenerateBall()
+    ball = robot.GenerateBallbyIndex(195)
     bat = CatchBall_Bat(ball, DroppingPoint(ball)[0] + 0.1, target)
     mgr = PingPongManager(ball)
     if bat is not None:
@@ -271,14 +277,6 @@ if __name__ == '__main__':
     mgr.start()
     mgr.show()
     plt.show()
-
-    # ball = Pingpongball(0, 0.2, -1, 0)
-    # bat = pingpongbat(-0.03, 0.2, 2, 1, math.pi / 4)
-    # mgr = pingpongmanager(ball)
-    # mgr.bats = [none, bat]
-    # mgr.start()
-    # bat.show()
-    # mgr.show()
 
     # for i in range(20):
     #     ball = ServeBallRobot().GenerateBallbyIndex(195)
