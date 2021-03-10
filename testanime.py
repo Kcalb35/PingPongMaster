@@ -36,7 +36,7 @@ class DisplayManager:
                         tmpbat.vx = - tmpbat.vx
                         tmpbat.theta = math.pi - tmpbat.theta
                     else:
-                        tmpbat = CatchBall_Bat(self.ball, self.target)
+                        tmpbat = CatchBall_Bat(self.ball, self.GenerateTarget())
                     self.bats[1 - i] = tmpbat
                     break
 
@@ -47,12 +47,13 @@ if __name__ == '__main__':
     scale = 300
     width = 1080
     height = 720
+    tps = 50
 
     windowSurface = pygame.display.set_mode((width, height))
     pygame.display.set_caption("pingpongMaster")
 
     robot = ServeBallRobot("data.txt")
-    mgr = DisplayManager(robot.GenerateBall())
+    mgr = DisplayManager(robot.GenerateBallbyIndex(1033))
 
 
     def convert(pos):
@@ -76,7 +77,7 @@ if __name__ == '__main__':
         pygame.draw.line(windowSurface, (165, 42, 42), (width / 2, height - 0.02 * scale),
                          (width / 2, height - 0.1725 * scale), 2)
 
-        mgr.Move(1 / 50)
+        mgr.Move(1 / tps)
         pygame.draw.circle(windowSurface, (255, 165, 0),
                            (mgr.ball.x * scale + width / 2, -mgr.ball.y * scale + height - 0.02 * scale),
                            mgr.ball.radius * scale)
@@ -84,4 +85,4 @@ if __name__ == '__main__':
         drawBat(mgr.bats[1])
 
         pygame.display.update()
-        clock.tick(50)
+        clock.tick(tps)

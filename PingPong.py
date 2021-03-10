@@ -303,8 +303,8 @@ def flection(vx, vy, batvx, batvy, theta):
 if __name__ == '__main__':
     robot = ServeBallRobot("data.txt")
     target = -1
-    ball = robot.GenerateBall()
-    # ball = robot.GenerateBallbyIndex(366)
+    # ball = robot.GenerateBall()
+    ball = robot.GenerateBallbyIndex(296)
     bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
     if bat is not None:
