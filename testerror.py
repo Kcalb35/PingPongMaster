@@ -12,7 +12,7 @@ if __name__ == '__main__':
             ball = robot.GenerateBall()
             bat = CatchBall_Bat(ball, target)
             mgr = PingPongManager(ball)
-            mgr.tick = 1e-6
+            mgr.tick = 1e-4
             if bat is not None:
                 mgr.bats = [None, bat]
             else:
@@ -21,7 +21,7 @@ if __name__ == '__main__':
             dx = mgr.ball.TableBouncePoint[1] - target
             li.append(dx)
             sum += math.fabs(dx)
-            if len(li) == 30:
+            if len(li) == 300:
                 break
         except Exception as e:
             print(f"{ball.vx}")
