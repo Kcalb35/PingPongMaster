@@ -277,11 +277,12 @@ class PingPongManager:
                     self.ball.Bounce(self.bats[i])
 
     def show(self):
+        plt.figure(figsize=(24 / 2.54, 8 / 2.54),dpi=300)
         self.ball.showTrace()
         plt.plot([-1.37, 1.37], [0, 0])
         plt.plot([0, 0], [0, 0.1525])
-        # plt.ylim((0, 0.5))
-        # plt.xlim(-1.5, 1.5)
+        plt.ylim((-0.05, 1))
+        plt.xlim(-1.5, 1.5)
         # plt.show()
 
 
@@ -304,7 +305,8 @@ if __name__ == '__main__':
     robot = ServeBallRobot("data.txt")
     target = -1
     # ball = robot.GenerateBall()
-    ball = robot.GenerateBallbyIndex(296)
+    ball = robot.GenerateBallbyIndex(605)
+    print(ball.vx, ball.vy)
     bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
     if bat is not None:
@@ -314,6 +316,7 @@ if __name__ == '__main__':
         print("无解")
     mgr.start()
     mgr.show()
+    bat.show()
     plt.show()
 
     # for i in range(20):
