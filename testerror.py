@@ -1,4 +1,5 @@
 from PingPong import *
+import pickle
 
 if __name__ == '__main__':
     robot = ServeBallRobot("data.txt")
@@ -12,7 +13,7 @@ if __name__ == '__main__':
             ball = robot.GenerateBall()
             bat = CatchBall_Bat(ball, target)
             mgr = PingPongManager(ball)
-            mgr.tick = 1e-4
+            mgr.tick = 1e-3
             if bat is not None:
                 mgr.bats = [None, bat]
             else:
