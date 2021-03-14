@@ -70,7 +70,7 @@ def CatchBall_Bat(ball, target, dx=0.1):
     # 初猜的数据
     iterCount = 40
     theta = math.pi / 4
-    bat_v = vector(-(-target * 3 - ball.vx) / 2, 0.5)
+    bat_v = vector(-0.5, 0.5)
     ball_v = vector(vx1, vy1)
     i = 0
 
@@ -329,7 +329,8 @@ if __name__ == '__main__':
         print("无解")
     mgr.start()
     mgr.show()
-    bat.show()
+    if bat is not None:
+        bat.show()
     plt.show()
 
     # for i in range(20):

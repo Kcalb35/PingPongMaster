@@ -32,6 +32,8 @@ class DisplayManager:
                     if i == 1:
                         tmpball = PingPongBall(-self.ball.x, self.ball.y, -self.ball.vx, self.ball.vy)
                         tmpbat = CatchBall_Bat(tmpball, self.GenerateTarget())
+                        if tmpbat is None:
+                            print("no solution for",  tmpball.x, tmpball.y, tmpball.vx, tmpball.vy)
                         tmpbat.x = - tmpbat.x
                         tmpbat.vx = - tmpbat.vx
                         tmpbat.theta = math.pi - tmpbat.theta
@@ -48,12 +50,13 @@ if __name__ == '__main__':
     width = 1080
     height = 720
     tps = 50
+    speed = 1
 
     windowSurface = pygame.display.set_mode((width, height))
     pygame.display.set_caption("pingpongMaster")
 
     robot = ServeBallRobot("data.txt")
-    mgr = DisplayManager(robot.GenerateBallbyIndex(1033))
+    mgr = DisplayManager(robot.GenerateBall())
 
 
     def convert(pos):
@@ -64,8 +67,8 @@ if __name__ == '__main__':
         dx = math.cos(bat.theta) * bat.radius
         dy = math.sin(bat.theta) * bat.radius
 
-        pygame.draw.line(windowSurface, (223, 1, 1), convert((bat.x - dx, bat.y - dy+0.02)),
-                         convert((bat.x + dx, bat.y + dy+0.02)), 3)
+        pygame.draw.line(windowSurface, (223, 1, 1), convert((bat.x - dx, bat.y - dy + 0.02)),
+                         convert((bat.x + dx, bat.y + dy + 0.02)), 3)
 
 
     while True:
@@ -85,4 +88,4 @@ if __name__ == '__main__':
         drawBat(mgr.bats[1])
 
         pygame.display.update()
-        clock.tick(tps)
+        clock.tick(tps * speed)
