@@ -3,7 +3,7 @@ import pickle
 
 if __name__ == '__main__':
     robot = ServeBallRobot("data.txt")
-    target = -1
+    target = -0.6
     sum = 0
     li = []
     tryTimes = 0
@@ -22,7 +22,7 @@ if __name__ == '__main__':
             dx = mgr.ball.TableBouncePoint[1] - target
             li.append(dx)
             sum += math.fabs(dx)
-            if len(li) == 300:
+            if len(li) == 1000:
                 break
         except Exception as e:
             print(f"{ball.vx}")

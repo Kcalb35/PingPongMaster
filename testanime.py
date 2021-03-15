@@ -8,7 +8,7 @@ class DisplayManager:
         self.tick = 1e-4
         self.ball = ball
         self.bats = [None, None]
-        self.target = -1
+        self.target = -0.7
         self.bats[1] = CatchBall_Bat(ball, self.GenerateTarget())
         self.bats[0] = PingPongBat(-1.4, 0.2, 0, 0, math.pi / 2)
 
@@ -24,7 +24,8 @@ class DisplayManager:
                 if len(self.ball.TableBouncePoint) >= 2 and self.ball.TableBouncePoint[-1] * self.ball.TableBouncePoint[
                     -2] > 0:
                     break
-            if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+            # if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+            if self.ball.CheckOutBoundary():
                 break
             for i in range(2):
                 if self.bats[i] is not None and self.ball.CheckBounce(self.bats[i]):
@@ -33,7 +34,7 @@ class DisplayManager:
                         tmpball = PingPongBall(-self.ball.x, self.ball.y, -self.ball.vx, self.ball.vy)
                         tmpbat = CatchBall_Bat(tmpball, self.GenerateTarget())
                         if tmpbat is None:
-                            print("no solution for",  tmpball.x, tmpball.y, tmpball.vx, tmpball.vy)
+                            print("no solution for", tmpball.x, tmpball.y, tmpball.vx, tmpball.vy)
                         tmpbat.x = - tmpbat.x
                         tmpbat.vx = - tmpbat.vx
                         tmpbat.theta = math.pi - tmpbat.theta
@@ -48,16 +49,16 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     scale = 300
     width = 1080
-    height = 720
-    tps = 50
+    height = 360
+    tps = 60
     speed = 1
 
     windowSurface = pygame.display.set_mode((width, height))
     pygame.display.set_caption("pingpongMaster")
 
     robot = ServeBallRobot("data.txt")
-    mgr = DisplayManager(robot.GenerateBall())
-
+    # mgr = DisplayManager(robot.GenerateBall())
+    mgr = DisplayManager(robot.GenerateBallbyIndex(131))
 
     def convert(pos):
         return pos[0] * scale + width / 2, height - pos[1] * scale

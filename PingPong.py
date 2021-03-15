@@ -2,8 +2,6 @@ import math
 import random
 import matplotlib.pyplot as plt
 
-'''calculate point to line distance'''
-
 
 def Point2LineDistance(x, y, line_x, line_y, theta):
     return math.fabs(math.sin(theta) * (x - line_x) - math.cos(theta) * (y - line_y))
@@ -68,7 +66,7 @@ def CatchBall_Bat(ball, target, dx=0.1):
     vy1 = -ball.vy + 9.8 / ball.vx * (2 * drop - ball.x - catch_x)
 
     # 初猜的数据
-    iterCount = 40
+    iterCount = 100
     theta = math.pi / 4
     bat_v = vector(-0.5, 0.5)
     ball_v = vector(vx1, vy1)
@@ -79,7 +77,10 @@ def CatchBall_Bat(ball, target, dx=0.1):
         # 碰撞前的速度
         vx1 = ball.vx
         vy1 = -ball.vy + 9.8 / ball.vx * (2 * drop - ball.x - catch_x)
+        ball_v = vector(vx1, vy1)
         i += 1
+        if vy1 <= 0:
+            startflag = False
         if startflag:
             a = (catch_y - ball.radius) * (vx1 ** 2 - vy1 ** 2) - 2 * vx1 * vy1 * (target - catch_x)
             b = 2 * (catch_y - ball.radius) * vx1 * vy1 + (target - catch_x) * (vx1 ** 2 - vy1 ** 2)
@@ -93,7 +94,7 @@ def CatchBall_Bat(ball, target, dx=0.1):
                 ball_bounce = PingPongBall(catch_x, catch_y, vx_bounce, vy_bounce)
                 if NetTouchCheck(ball_bounce):
                     dx += 0.05
-
+                    print("静拍有解触网")
                     continue
                 # 不触网，则用低回
                 return Generate_bat(catch_x, catch_y, 0, 0, theta)
@@ -283,7 +284,9 @@ class PingPongManager:
                 if len(self.ball.TableBouncePoint) >= 2 and self.ball.TableBouncePoint[-1] * self.ball.TableBouncePoint[
                     -2] > 0:
                     break
-            if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+
+            # if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+            if self.ball.CheckOutBoundary():
                 break
             for i in range(2):
                 if self.bats[i] is not None and self.ball.CheckBounce(self.bats[i]):
@@ -316,9 +319,9 @@ def flection(vx, vy, batvx, batvy, theta):
 
 if __name__ == '__main__':
     robot = ServeBallRobot("data.txt")
-    target = -1
-    ball = robot.GenerateBall()
-    # ball = robot.GenerateBallbyIndex(726)
+    target = -0.4
+    # ball = robot.GenerateBall()
+    ball = robot.GenerateBallbyIndex(970)
     print(ball.vx, ball.vy)
     bat = CatchBall_Bat(ball, target)
     mgr = PingPongManager(ball)
