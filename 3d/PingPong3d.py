@@ -7,7 +7,7 @@ import numpy as np
 def reflection(v, theta, phi, decay=0):
     e = polar2xyz(theta, phi)
     v_vertical = v.project(e)
-    return v - v_vertical.multiply(1+ math.sqrt(1-decay))
+    return v - v_vertical.multiply(1 + math.sqrt(1 - decay))
 
 
 def polar2xyz(theta, phi):
@@ -28,13 +28,36 @@ def Point2SurfaceDistance(x, y, z, x0, y0, z0, theta, phi):
     return distance
 
 
+def DroppintTime(ball):
+    return (ball.v.z + math.sqrt(ball.v.z ** 2 + 2 * 9.8 * (ball.z - ball.radius))) / 9.8
+
+
+def DroppingPoint(ball):
+    t = DroppintTime(ball)
+    return ball.x + t * ball.v.x, ball.y + t * ball.v.y
+
+
+def InterceptPoint3(ball, d=0.1):
+    p = DroppingPoint(ball)
+    vxy = math.sqrt(ball.v.x ** 2 + ball.v.y ** 2)
+    dx = d * ball.v.x / vxy
+    dy = d * ball.v.y / vxy
+    catch_x = p[0] + dx
+    catch_y = p[1] + dy
+
+    t = DroppintTime(ball)
+    vz_after = (9.8 * t - ball.v.z) * math.sqrt(1 - ball.decay)
+    dt = dx / ball.v.x
+    catch_z = vz_after * dt - 0.5 * 9.8 * dt ** 2 + ball.radius
+    return catch_x, catch_y, catch_z, vz_after - 9.8 * dt
+
+
 class vector3:
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
         self.length = math.sqrt(x ** 2 + y ** 2 + z ** 2)
-        self.decay = 0.1
 
     def __sub__(self, other):
         return vector3(self.x - other.x, self.y - other.y, self.z - other.z)
@@ -57,7 +80,7 @@ class vector3:
 
 
 class PingPongBall3:
-    def __init__(self, x, y, z, vx, vy, vz, decay=0.0):
+    def __init__(self, x, y, z, vx, vy, vz, decay=0.):
         self.x = x
         self.y = y
         self.z = z
@@ -159,12 +182,12 @@ class PingPongMgr3:
         x = np.linspace(0.7625, - 0.7625, 4)
         y = np.linspace(1.37, -1.37, 4)
         x, y = np.meshgrid(x, y)
-        ax.plot_surface(x, y, x * 0, color='b', alpha=0.5)
+        ax.plot_surface(x, y, x * 0, color='b', alpha=0.1)
 
         x = np.linspace(0.7625, -0.7625, 4)
         z = np.linspace(0, 0.1525, 4)
         x, z = np.meshgrid(x, z)
-        ax.plot_surface(x, x * 0, z, color='y', alpha=0.4)
+        ax.plot_surface(x, x * 0, z, color='y', alpha=0.1)
         plt.ylim((-1.5, 1.5))
         plt.xlim((-1.5, 1.5))
 
@@ -173,10 +196,15 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    b = PingPongBall3(0, 0, 0.2, 0.5, 5, 0.5, 0.3)
-    bat1 = PingPongBat3(0, 1.37, 0, 0, 0, 0, math.pi / 2, math.pi / 2)
+    b = PingPongBall3(0, 0, 0.2, 0.5, 4, 0.5, 0.1)
+    p = InterceptPoint3(b)
+    d = DroppingPoint(b)
+    print(p)
+    # bat1 = PingPongBat3(p[0], p[1]+b.radius, 0, 0, 0, 0, math.pi / 2, math.pi / 2)
+    ax.scatter(p[0], p[1], p[2], color='r')
+    ax.scatter(d[0], d[1], 0.02, color='r')
     mgr = PingPongMgr3(b)
-    mgr.bats[1] = bat1
+    # mgr.bats[1] = bat1
     mgr.start()
     mgr.show(ax)
 
