@@ -106,7 +106,7 @@ def InterceptPoint3(ball, d):
     catch_y = y + dy
 
     dt = d / vxy
-    catch_z = v_bounced.z * dt - 0.5 * 9.8 * dt ** 2 + ball.radius
+    catch_z = v_bounced.z * dt - 0.5 * 9.8 * dt ** 2 + ball.radius + z
     return catch_x, catch_y, catch_z, v_bounced.z - 9.8 * dt
 
 
@@ -127,28 +127,32 @@ def FastForward(ball, bat_v, catch_x, catch_y, catch_z, theta, phi):
     try:
         drop_x, drop_y, drop_z, v = DroppingStatus(ball)
     except Exception as e:
-        return False, None, None
+        return False, None, None, None
 
-    up_t = math.sqrt((catch_x - ball.x) ** 2 + (catch_y - ball.y) ** 2) / math.sqrt(ball.v.x ** 2 + ball.v.y ** 2)
+    up_t = math.sqrt((catch_x - drop_x) ** 2 + (catch_y - drop_y) ** 2) / math.sqrt(v.x ** 2 + v.y ** 2)
     v.z -= 9.8 * up_t
-    v_after = reflection(ball, bat_v, theta, phi, ball.decay)
-    ball_bounced = PingPongBall3(catch_x, catch_y, catch_z, v_after.x, v_after.y, v_after.z, ball.decay)
+    v_after = reflection(v, bat_v, theta, phi, ball.decay)
+
+    # check v_after y<0
+    if v_after.y > 0:
+        return False, None, None, None
 
     # check net pass
     dt = math.fabs(catch_y / v_after.y)
     h = catch_z + v_after.z * dt - 9.8 * 0.5 * dt ** 2
     # 0.1525 + 0.02 = 0.1725
     if h < 0.1725:
-        return False, None, None
+        return False, None, None, None
 
     # get status
+    ball_bounced = PingPongBall3(catch_x, catch_y, catch_z, v_after.x, v_after.y, v_after.z, ball.decay)
     x_final, y_final, z_final, v_final = DroppingStatus(ball_bounced)
 
     # check out boundary
     if math.fabs(x_final) >= 0.7625 or y_final > -0.02 or y_final < -1.35:
-        return False, None, None
+        return False, None, None, None
 
-    return True, (x_final, y_final, z_final), v_final
+    return True, (x_final, y_final, z_final), v, v_final
 
 
 def correctBatPosition(v_ball, x, y, z, radius):
@@ -280,10 +284,8 @@ class PingPongMgr3:
             self.ball.Move(self.tick)
             if self.ball.CheckTableBounce():
                 self.ball.TableBounce()
-                if len(self.ball.TableBouncePoint) == 2:
-                    break
-                if len(self.ball.TableBouncePoint) >= 2 and self.ball.TableBouncePoint[-1] * self.ball.TableBouncePoint[
-                    -2] > 0:
+                if len(self.ball.TableBouncePoint[0]) >= 2 and self.ball.TableBouncePoint[1][-1] * \
+                        self.ball.TableBouncePoint[1][-2] > 0:
                     break
             if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
                 break
