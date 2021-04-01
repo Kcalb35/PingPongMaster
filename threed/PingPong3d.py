@@ -281,17 +281,24 @@ class PingPongMgr3:
 
     def start(self):
         while True:
-            self.ball.Move(self.tick)
-            if self.ball.CheckTableBounce():
-                self.ball.TableBounce()
-                if len(self.ball.TableBouncePoint[0]) >= 2 and self.ball.TableBouncePoint[1][-1] * \
-                        self.ball.TableBouncePoint[1][-2] > 0:
-                    break
-            if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+            b = self.move()
+            if not b:
                 break
-            for i in range(2):
-                if self.bats[i] is not None and self.ball.CheckBounce(self.bats[i]):
-                    self.ball.Bounce(self.bats[i])
+
+    def move(self):
+        self.ball.Move(self.tick)
+        if self.ball.CheckTableBounce():
+            self.ball.TableBounce()
+            if len(self.ball.TableBouncePoint[0]) >= 2 and self.ball.TableBouncePoint[1][-1] * \
+                    self.ball.TableBouncePoint[1][-2] > 0:
+                return False
+        if self.ball.CheckTouchNet() or self.ball.CheckOutBoundary():
+            return False
+        for i in range(2):
+            if self.bats[i] is not None and self.ball.CheckBounce(self.bats[i]):
+                self.ball.Bounce(self.bats[i])
+
+        return True
 
     def drawBats(self):
         pass

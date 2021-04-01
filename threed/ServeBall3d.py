@@ -1,6 +1,7 @@
 import random
 import math
 import sys
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from PingPong3d import PingPongBall3, PingPongBat3, DroppingPoint, PingPongMgr3, FastForward, InterceptPoint3, vector3, \
@@ -92,17 +93,18 @@ def randomCatch(datafile, file, times, decay):
         lines = [line.replace('\n', '') for line in f.readlines()]
 
     results = []
-    for i in range(0, times - 1):
+    for i in tqdm(range(0, times - 1)):
         solution = []
-        while len(solution) < 5:
+        while len(solution) < 20:
             # prepare random bat data
             b = convertLine2Ball(lines[i], decay)
-            x, y, z, _ = InterceptPoint3(b, random.uniform(0, 0.5))
+            x, y, z, _ = InterceptPoint3(b, random.uniform(0, 2))
             theta = random.random() * math.pi
             phi = random.random() * math.pi
             vx = random.uniform(-0.5, 0.5)
             vy = -random.random() / 2
             vz = random.uniform(-0.5, 0.5)
+            vx = vy = vz = 0
 
             flag, pos, v_mid, v_final = FastForward(b, vector3(vx, vy, vz), x, y, z, theta, phi)
             if flag:

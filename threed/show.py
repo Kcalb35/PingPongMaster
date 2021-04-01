@@ -1,4 +1,8 @@
+import pickle
+
 import matplotlib.pyplot as plt
+import torch
+from LearnHitBall import net
 
 from PingPong3d import PingPongMgr3, InterceptPoint3, PingPongBat3, DroppingStatus, PingPongBall3
 from ServeBall3d import ServeBallRobot, ServeBallBatRobot
@@ -6,15 +10,15 @@ from ServeBall3d import ServeBallRobot, ServeBallBatRobot
 if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    bot = ServeBallRobot('test/testthrow.txt')
-    r = ServeBallBatRobot('test/test-catch.txt')
+    # bot = ServeBallRobot('data/throw-5w-test.txt')
+    r = ServeBallBatRobot('data/catch_more30')
 
     b, bat, _ = r.generate(0.1)
 
-    # b = bot.generateBallIndex(0, 0.1)
+    # b = bot.generateBall(0.1)
 
     # bat = PingPongBat3(0.20988, 1.466444, 0.143454, 0.25764,-0.45152,0.428729, 1.38, 2.349)
-    # with open('model.bin', 'rb') as f:
+    # with open('model/model-d2.bin', 'rb') as f:
     #     n = pickle.load(f)
     # bat = n.forward(torch.tensor([b.x, b.y, b.z, b.v.x, b.v.y, b.v.z])).tolist()
     # bat = PingPongBat3(bat[0], bat[1], bat[2], bat[3], bat[4], bat[5], bat[6], bat[7])
